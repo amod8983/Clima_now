@@ -1,17 +1,9 @@
-import 'package:clima_now/data/dummy_additional_weather_info_data.dart';
-import 'package:clima_now/data/dummy_forecast_data.dart';
-import 'package:clima_now/data/dummy_location_weather_info_data.dart';
-import 'package:clima_now/models/additional_weather_info_model.dart';
-import 'package:clima_now/models/full_weather_model.dart';
-import 'package:clima_now/models/location_weather_info.dart';
-import 'package:clima_now/models/weather_forecast.dart';
-import 'package:clima_now/services/location.dart';
-import 'package:clima_now/services/weather.dart';
+import 'package:clima_now/bloc/cubit/current_weather_cubit.dart';
 import 'package:clima_now/widgets/additional_weather_info.dart';
 import 'package:clima_now/widgets/primary_weather_info.dart';
 import 'package:clima_now/widgets/weather_forecast.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MyLocationScreen extends StatefulWidget {
   const MyLocationScreen({super.key, this.lon, this.lat});
@@ -24,43 +16,12 @@ class MyLocationScreen extends StatefulWidget {
 }
 
 class _MyLocationScreenState extends State<MyLocationScreen> {
-  late LocationWeatherInfo _currentLocationWeatherInfo;
-  late List<AdditionalWeatherInfoModel> _additionalWeatherInfos;
-  late List<WeatherForecastModel> _weatherForecasteData = [];
-
   @override
   void initState() {
     super.initState();
-    _currentLocationWeatherInfo = dummyLocationWeatherInfo;
-    _additionalWeatherInfos = dummyAdditionalWeatherInfo;
-    _weatherForecasteData = dummyForecastData;
-    _getCurrentLocation();
-  }
-
-  Future<void> _getCurrentLocation() async {
-    double lat;
-    double lon;
-
-    if (widget.lat != null && widget.lon != null) {
-      lat = widget.lat!;
-      lon = widget.lon!;
-    } else {
-      Position currentPosition = await GeolocatorService.getCurrentLocation();
-      lat = currentPosition.latitude;
-      lon = currentPosition.longitude;
-    }
-
-    FullWeatherModel tempInfo =
-        await WeatherService.getCurrentWeather(lat, lon);
-    List<WeatherForecastModel> weatherForecasts =
-        await WeatherService.getWeatherForecast(lat, lon);
-    if (mounted) {
-      setState(() {
-        _currentLocationWeatherInfo = tempInfo.locationWeatherInfo;
-        _additionalWeatherInfos = tempInfo.additionalWeatherInfos;
-        _weatherForecasteData = weatherForecasts;
-      });
-    }
+    context
+        .read<CurrentWeatherCubit>()
+        .getCurrentWeather(widget.lat, widget.lon);
   }
 
   @override
@@ -74,25 +35,33 @@ class _MyLocationScreenState extends State<MyLocationScreen> {
             height: 0.5, // Thickness of the border
           ),
         ),
-        title: Text(
-          _currentLocationWeatherInfo.locationName,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-              color: Theme.of(context).colorScheme.onSurface, fontSize: 20),
+        title: BlocBuilder<CurrentWeatherCubit, CurrentWeatherState>(
+          builder: (context, currentWeather) {
+            if (currentWeather is CurrentWeatherInitial) {
+              return Text(
+                currentWeather.fullWeatherData.locationWeatherInfo.locationName,
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 20),
+              );
+            } else {
+              return Text(
+                'Loading current city name',
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 20),
+              );
+            }
+          },
         ),
       ),
-      body: SingleChildScrollView(
+      body: const SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            PrimaryWeatherInfo(
-              locationWeatherInfo: _currentLocationWeatherInfo,
-            ),
-            WeatherForecast(
-              weatherForecastData: _weatherForecasteData,
-            ),
-            AdditionalWeatherInfo(
-              additionalWeatherDatas: _additionalWeatherInfos,
-            ),
+            PrimaryWeatherInfo(),
+            WeatherForecast(),
+            AdditionalWeatherInfo(),
           ],
         ),
       ),

@@ -1,6 +1,8 @@
+import 'package:clima_now/bloc/cubit/current_weather_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:clima_now/bottom_nav.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 final ThemeData themeData = ThemeData(
@@ -22,10 +24,16 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: themeData,
-      home: const BottomNav(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CurrentWeatherCubit>(
+            create: (context) => CurrentWeatherCubit()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: themeData,
+        home: const BottomNav(),
+      ),
     );
   }
 }
